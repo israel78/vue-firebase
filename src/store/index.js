@@ -13,16 +13,14 @@ export default createStore({
     }
   },
   mutations: {
-    cargar(state, payload) {
-      state.tareas = payload
+    cargar(state,payload){
+      this.state.tareas = payload
     },
     set(state, payload) {
       state.tareas.push(payload)
-      localStorage.setItem('tareas', JSON.stringify(state.tareas))
     },
     eliminar(state, payload) {
       state.tareas = state.tareas.filter(item => item.id !== payload)
-      localStorage.setItem('tareas', JSON.stringify(state.tareas))
     },
     tarea(state, payload) {
       if (!state.tareas.find(item => item.id === payload)) {
@@ -34,29 +32,89 @@ export default createStore({
     update(state, payload) {
       state.tareas = state.tareas.map(item => item.id === payload.id ? payload : item)
       router.push('/')
-      localStorage.setItem('tareas', JSON.stringify(state.tareas))
     }
   },
   actions: {
-    cargarLocalStorage({ commit }) {
-      if (localStorage.getItem('tareas')) {
-        const tareas = JSON.parse(localStorage.getItem('tareas'))
-        commit('cargar', tareas)
-        return
+
+    async cargarDatosFirebase({commit} ){
+      try{
+        const res = await fetch(`https://udemy-api-31a48-default-rtdb.europe-west1.firebasedatabase.app/tareas.json`,{
+          method: 'GET',
+          headers:{
+            'Content-Type':'application/json'
+          },
+        })
+        const dataDB = await res.json();
+        console.log(dataDB)
+        const arrayTareas = []
+        for (let id in dataDB) {
+          arrayTareas.push(dataDB[id])
+        }
+        commit('cargar', arrayTareas)
+      }catch (e) {
+        console.log(e);
       }
 
-      localStorage.setItem('tareas', JSON.stringify([]))
+
     },
-    setTareas({ commit }, tarea) {
+    //Se hace necesario colocar async para poder utilizarla en la llamada al api de Firebase e implementar
+    //El await que hace que la llamada sea sincrona
+    async setTareas({ commit }, tarea) {
+      try{
+        //Si en Firebase le pasamos un ID como identificador en párametro (si no lo genera solo) y POST como tipo de llamada.
+        const res = await fetch(`https://udemy-api-31a48-default-rtdb.europe-west1.firebasedatabase.app/tareas/${tarea.id}.json`,{
+          method: 'PUT',
+          headers:{
+            'Content-Type':'application/json'
+          },
+          body: JSON.stringify(tarea)
+        })
+        const dataDB = await res.json();
+        console.log(dataDB)
+
+      }catch (e) {
+        console.log(e)
+      }
       commit('set', tarea)
     },
-    deleteTareas({ commit }, id) {
+    async deleteTareas({ commit }, id) {
+      try{
+        //Si en Firebase le pasamos un ID como identificador en párametro (si no lo genera solo) y POST como tipo de llamada.
+        const res = await fetch(`https://udemy-api-31a48-default-rtdb.europe-west1.firebasedatabase.app/tareas/${id}.json`,{
+          method: 'DELETE',
+          headers:{
+            'Content-Type':'application/json'
+          },
+        })
+        const dataDB = await res.json();
+        console.log(dataDB)
+
+      }catch (e) {
+        console.log(e)
+      }
       commit('eliminar', id)
     },
     setTarea({ commit }, id) {
       commit('tarea', id)
     },
-    updateTarea({ commit }, tarea) {
+   async updateTarea({ commit }, tarea) {
+     try{
+       //Si en Firebase le pasamos un ID como identificador en párametro (si no lo genera solo) y POST como tipo de llamada.
+       //Para editar, se usa path (ver documentación de firebase)
+       const res = await fetch(`https://udemy-api-31a48-default-rtdb.europe-west1.firebasedatabase.app/tareas/${tarea.id}.json`,{
+         method: 'PATCH',
+         mode:'cors',
+         headers:{
+           'Content-Type':'application/json'
+         },
+         body: JSON.stringify(tarea)
+       })
+       const dataDB = await res.json();
+       console.log(dataDB)
+
+     }catch (e) {
+       console.log(e)
+     }
       commit('update', tarea)
     }
   },
